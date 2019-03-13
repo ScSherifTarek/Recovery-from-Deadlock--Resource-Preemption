@@ -9,13 +9,13 @@
 
 public class Detection {
 
-	static int n = 5,m = 3;
-	public static int alloc[][] = new int[n][m];
-	public static int req[][] = new int[n][m];
-	public static int avail[] = new int[m];
-	public static Boolean finish[] = new Boolean[n];
-	public static Boolean terminated[] = new Boolean[n];
-	public static String seq="";
+	private static int n = 5,m = 3;
+	private static int alloc[][] = new int[n][m];
+	private static int req[][] = new int[n][m];
+	private static int avail[] = new int[m];
+	private static Boolean finish[] = new Boolean[n];
+	private static Boolean terminated[] = new Boolean[n];
+	private static String seq="";
 	
 	public static void fill()
 	{
@@ -71,27 +71,13 @@ public class Detection {
 			terminated[i] = false;
 	}
 	
-	public static Boolean isFinished()
-	{
-		for(int i=0;i<n;i++)
-			if(finish[i] == false)
-				return false;
-		return true;
-	}
-	
-	public static Boolean isSmaller(int arr1[], int arr2[])
-	{
-		for(int i=0;i<arr1.length;i++)
-			if(arr1[i] > arr2[i])
-				return false;
-		return true;
-	}
-	
 	
 	public static void algo()
 	{
-		for(int j=0;j<n;j++)
+		Boolean thereIsaAChange;
+		do
 		{
+			thereIsaAChange = false;
 			for(int i=0;i<n;i++)
 			{
 				if(!finish[i] && isSmaller(req[i],avail)) // request of process i is smaller than avail or not
@@ -100,13 +86,14 @@ public class Detection {
 						avail[k] += alloc[i][k];
 					finish[i] = true;
 					seq += "P"+i+", ";
+					thereIsaAChange = true;
 				}
 			}
-		}
+		}while(thereIsaAChange);
 	}
 	
 	
-	public static void deadLock()
+	public static void deadLockRecovery()
 	{
 		if(isFinished())
 		{
@@ -115,26 +102,29 @@ public class Detection {
 		}
 		else
 		{
-			System.out.println("Dead Lock");
-			algo();
-			int count=1;
-			while(!isFinished() && count <=n)
+			System.out.println("Dead Lock happened");
+			System.out.println("Recovering from the deadlock ...");
+			
+			while(!isFinished())
 			{
-				release();
+				if(!release()) // if there's no victims to choose from
+					break;
 				algo();
-				count++;
 			}
 			if(!isFinished())
-				System.out.println("DeadLock");
+				System.out.println("We can't recover from this deadlock - deadlock state");
 			else
-				System.out.println("Safe");
+				System.out.println("recovered from the deadlock - safe state");
 			System.out.println(seq);
 		}
 	}
 	
-	public static void release()
+	private static Boolean release()
 	{
 		int vic = getMin();
+		if(vic == -1) // can't get the min (all processes have been terminated)
+			return false;
+		
 		System.out.println("Victim is P"+vic);
 		for(int i =0; i<m;i++)
 		{
@@ -143,17 +133,10 @@ public class Detection {
 			alloc[vic][i] = 0;
 			terminated[vic] = true;
 		}
+		return true;
 	}
 	
-	public static int sum(int arr[])
-	{
-		int sum=0;
-		for(int i=0;i<arr.length;i++)
-			sum += arr[i];
-		return sum;
-	}
-	
-	public static int getMin()
+	private static int getMin()
 	{
 		int min = (int) 1e9;
 		int minIndex = -1;
@@ -173,10 +156,37 @@ public class Detection {
 		return minIndex;
 	}
 	
+	private static Boolean isFinished()
+	{
+		for(int i=0;i<n;i++)
+			if(finish[i] == false)
+				return false;
+		return true;
+	}
+	
+	private static Boolean isSmaller(int arr1[], int arr2[])
+	{
+		for(int i=0;i<arr1.length;i++)
+			if(arr1[i] > arr2[i])
+				return false;
+		return true;
+	}
+	
+	
+	
+	private static int sum(int arr[])
+	{
+		int sum=0;
+		for(int i=0;i<arr.length;i++)
+			sum += arr[i];
+		return sum;
+	}
+	
+	
 	public static void main(String[] args)
 	{
 		fill();
 		algo();
-		deadLock();
+		deadLockRecovery();
 	}
 }
